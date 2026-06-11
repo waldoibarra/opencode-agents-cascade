@@ -17,32 +17,32 @@ function headerPaths(system0: string | undefined): string[] {
 }
 
 describe("transformSystem — PRD example end-to-end", () => {
-  const directory = "/Users/waldoibarra/projects/my-repo/sub-project"
-  const worktree = "/Users/waldoibarra/projects"
+  const directory = "/Users/me/projects/my-repo/sub-project"
+  const worktree = "/Users/me/projects"
   const fs = fakeFs({
     "/Users/AGENTS.md": "users level",
-    "/Users/waldoibarra/AGENTS.md": "home level",
+    "/Users/me/AGENTS.md": "home level",
   })
 
   // Native OpenCode order: global first, then cwd → worktree root (inverted).
   const nativeSystem = [
     BASE,
-    block("/Users/waldoibarra/.config/opencode/AGENTS.md", "global"),
-    block("/Users/waldoibarra/projects/my-repo/sub-project/AGENTS.md", "sub"),
-    block("/Users/waldoibarra/projects/my-repo/AGENTS.md", "repo"),
-    block("/Users/waldoibarra/projects/AGENTS.md", "projects"),
+    block("/Users/me/.config/opencode/AGENTS.md", "global"),
+    block("/Users/me/projects/my-repo/sub-project/AGENTS.md", "sub"),
+    block("/Users/me/projects/my-repo/AGENTS.md", "repo"),
+    block("/Users/me/projects/AGENTS.md", "projects"),
   ].join("\n")
 
   it("injects ancestors and reorders everything outermost-first", () => {
     const system = [nativeSystem]
     transformSystem({ system, directory, worktree, sessionID: "ses_1", ...fs })
     expect(headerPaths(system[0])).toEqual([
-      "/Users/waldoibarra/.config/opencode/AGENTS.md",
+      "/Users/me/.config/opencode/AGENTS.md",
       "/Users/AGENTS.md",
-      "/Users/waldoibarra/AGENTS.md",
-      "/Users/waldoibarra/projects/AGENTS.md",
-      "/Users/waldoibarra/projects/my-repo/AGENTS.md",
-      "/Users/waldoibarra/projects/my-repo/sub-project/AGENTS.md",
+      "/Users/me/AGENTS.md",
+      "/Users/me/projects/AGENTS.md",
+      "/Users/me/projects/my-repo/AGENTS.md",
+      "/Users/me/projects/my-repo/sub-project/AGENTS.md",
     ])
   })
 
@@ -74,24 +74,24 @@ describe("transformSystem — PRD example end-to-end", () => {
     // natively only the cwd file is loaded, everything else is injected.
     const innerSystem = [
       BASE,
-      block("/Users/waldoibarra/.config/opencode/AGENTS.md", "global"),
-      block("/Users/waldoibarra/projects/my-repo/sub-project/AGENTS.md", "sub"),
+      block("/Users/me/.config/opencode/AGENTS.md", "global"),
+      block("/Users/me/projects/my-repo/sub-project/AGENTS.md", "sub"),
     ].join("\n")
     const innerFs = fakeFs({
       "/Users/AGENTS.md": "users level",
-      "/Users/waldoibarra/AGENTS.md": "home level",
-      "/Users/waldoibarra/projects/AGENTS.md": "projects",
-      "/Users/waldoibarra/projects/my-repo/AGENTS.md": "repo",
+      "/Users/me/AGENTS.md": "home level",
+      "/Users/me/projects/AGENTS.md": "projects",
+      "/Users/me/projects/my-repo/AGENTS.md": "repo",
     })
     const system = [innerSystem]
     transformSystem({ system, directory, worktree: directory, sessionID: "ses_1", ...innerFs })
     expect(headerPaths(system[0])).toEqual([
-      "/Users/waldoibarra/.config/opencode/AGENTS.md",
+      "/Users/me/.config/opencode/AGENTS.md",
       "/Users/AGENTS.md",
-      "/Users/waldoibarra/AGENTS.md",
-      "/Users/waldoibarra/projects/AGENTS.md",
-      "/Users/waldoibarra/projects/my-repo/AGENTS.md",
-      "/Users/waldoibarra/projects/my-repo/sub-project/AGENTS.md",
+      "/Users/me/AGENTS.md",
+      "/Users/me/projects/AGENTS.md",
+      "/Users/me/projects/my-repo/AGENTS.md",
+      "/Users/me/projects/my-repo/sub-project/AGENTS.md",
     ])
   })
 })
