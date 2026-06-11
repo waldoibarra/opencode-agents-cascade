@@ -23,6 +23,8 @@ current list of available commands.
 
 ## Deep reference
 
+- Plugin mechanism and limitations → `docs/how-it-works.md`
+- Development guide (commands, architecture, tests) → `docs/development.md`
 - Toolchain details → `docs/toolchain.md`
 - Hook triggers and checks → `docs/hooks.md`
 - CI pipelines (same recipes as the hooks) → `.github/workflows/`

@@ -1,21 +1,25 @@
 # opencode-agents-cascade
 
-OpenCode plugin that makes instruction-file loading behave like Claude Code:
+OpenCode plugin that makes instruction-file loading behave like Claude Code.
 
-1. **Injects missing ancestors** — OpenCode stops collecting `AGENTS.md`/`CLAUDE.md` at the git
-    worktree root. This plugin walks from the worktree root's parent all the way up to `/` and
-    injects every instruction file it finds (one per directory, `AGENTS.md` preferred over
-    `CLAUDE.md`).
-2. **Fixes precedence** — OpenCode places within-worktree files innermost-first, giving the
-    outermost file the highest LLM weight. The plugin reorders all instruction blocks
-    outermost-first, so the file closest to the cwd has the highest precedence — matching
-    Claude Code.
+## Why
 
-The global config block (`~/.config/opencode/AGENTS.md`) is left untouched at the start of the
-instructions. If the cwd is not inside a git worktree, the plugin is a no-op (OpenCode already
-walks to `/` natively in that case).
+OpenCode stops collecting `AGENTS.md`/`CLAUDE.md` files at the git worktree root, so instructions
+in parent directories (your home folder, a projects folder, an org-wide root) silently never reach
+the model. It also weights the files it does load in the inverse order of Claude Code: the
+outermost file wins instead of the most specific one. If you keep layered instructions — global
+rules at home, team rules per folder, project rules in the repo — both behaviors break the
+layering. See [PRD.md](PRD.md) for the full research.
 
-See [PRD.md](PRD.md) for the full design and research notes.
+## Features
+
+- **Injects missing ancestors** — walks from the worktree root's parent up to `/` and loads every
+  instruction file found (one per directory, `AGENTS.md` preferred over `CLAUDE.md`).
+- **Fixes precedence** — reorders all instruction blocks outermost-first, so the file closest to
+  your cwd has the highest precedence, matching Claude Code.
+- **Stays out of the way** — the global config block is untouched, per-prompt custom system text
+  keeps its position, non-git projects are a no-op, and any failure degrades gracefully instead
+  of breaking the chat request.
 
 ## Install
 
@@ -27,66 +31,17 @@ Add the plugin to `~/.config/opencode/opencode.json`:
 }
 ```
 
-Pin to a tag or commit with `#v1.0.0` / `#<sha>` at the end of the spec. Git installs are cached
-under `~/.cache/opencode/packages/` and never auto-update — pin a new ref to upgrade. For local
-development, reference the checkout directly (path specs load the working tree live, no cache):
+Pin to a tag or commit with `#v1.0.0` / `#<sha>` at the end of the spec.
 
-```json
-{
-  "plugin": ["~/path/to/opencode-agents-cascade"]
-}
-```
+## Use
 
-The plugin ships as TypeScript sources with no build step: OpenCode executes plugins with Bun,
-which transpiles TypeScript at import time. Bun strips types without checking them, so type
-safety is enforced separately by `just typecheck`.
+Nothing to configure: start OpenCode inside any git repo and the ancestor instructions are
+injected on every chat request. To see it working, ask the model:
 
-## How it works
-
-OpenCode merges every loaded instruction file into a single system-prompt string, each prefixed
-with `Instructions from: <absolute path>`. The plugin registers the
-`experimental.chat.system.transform` hook and, on every chat request:
-
-1. Parses the merged string into a base prompt plus one block per file.
-2. Collects instruction files from directories above the git worktree root.
-3. Rebuilds the prompt: base, then non-chain blocks (global config, remote URLs, custom
-    `instructions` entries) in their original order, then the full ancestor chain sorted
-    outermost-first.
-
-If parsing finds no blocks (no instruction files loaded, or the upstream format changed), the
-plugin appends the ancestor files without reordering. Any unexpected failure degrades to a no-op —
-it never breaks the chat request.
-
-### Known limitations
-
-- Blocks are recognized by their `Instructions from:` header line, so file content that itself
-  contains such a line (pointing at an absolute path) splits a block in two.
-- OpenCode appends per-prompt custom system text (the `system` field of a prompt request) after
-  the last block with no delimiter. The plugin recovers the boundary by re-reading the last
-  block's file and keeps that text at the very end, where OpenCode put it. It travels with the
-  block only when the boundary cannot be recovered: the file changed on disk mid-request, or the
-  last block is a remote URL.
-
-## Development
-
-```sh
-just setup              # install toolchain (mise) and git hooks
-just test               # run the full test suite with Bun
-just test-unit          # hermetic unit tests (no disk I/O)
-just test-integration   # integration tests (real filesystem)
-just typecheck          # strict tsc over src and tests
-```
-
-The core logic lives in `src/cascade.ts` as pure functions (parser, sorter, walker, transform);
-`src/index.ts` is the thin plugin entry that wires in the real filesystem. Unit tests run on an
-in-memory fake filesystem with machine-neutral paths; integration tests build and destroy their
-own temp directory trees, so both suites pass on any machine — they never start OpenCode and are
-unaffected by whichever plugin install (git, path, or none) is active on the machine.
-
-Git hooks run typecheck, the full test suite, and the lints on every commit; CI
-(`.github/workflows/ci.yml`) runs the same `just` recipes on pushes to `main` and on PRs.
+> What "Instructions from:" headers are in your system prompt, in order?
 
 ## Docs
 
-- [Toolchain](docs/toolchain.md)
-- [Git hooks](docs/hooks.md)
+- [How it works and known limitations](docs/how-it-works.md)
+- [Development guide](docs/development.md)
+- [PRD: problem, research, and design](PRD.md)
