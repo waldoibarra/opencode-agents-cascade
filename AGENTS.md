@@ -25,6 +25,7 @@ current list of available commands.
 
 - Toolchain details → `docs/toolchain.md`
 - Hook triggers and checks → `docs/hooks.md`
+- CI pipeline (same recipes as the hooks) → `.github/workflows/ci.yml`
 
 ## Doc maintenance (mandatory)
 

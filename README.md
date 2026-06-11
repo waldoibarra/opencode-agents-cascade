@@ -27,14 +27,19 @@ Add the plugin to `~/.config/opencode/opencode.json`:
 }
 ```
 
-Pin to a tag or commit with `#v1.0.0` / `#<sha>` at the end of the spec. For local development,
-reference the checkout directly:
+Pin to a tag or commit with `#v1.0.0` / `#<sha>` at the end of the spec. Git installs are cached
+under `~/.cache/opencode/packages/` and never auto-update — pin a new ref to upgrade. For local
+development, reference the checkout directly (path specs load the working tree live, no cache):
 
 ```json
 {
   "plugin": ["~/path/to/opencode-agents-cascade"]
 }
 ```
+
+The plugin ships as TypeScript sources with no build step: OpenCode executes plugins with Bun,
+which transpiles TypeScript at import time. Bun strips types without checking them, so type
+safety is enforced separately by `just typecheck`.
 
 ## How it works
 
@@ -72,7 +77,11 @@ just typecheck          # strict tsc over src and tests
 The core logic lives in `src/cascade.ts` as pure functions (parser, sorter, walker, transform);
 `src/index.ts` is the thin plugin entry that wires in the real filesystem. Unit tests run on an
 in-memory fake filesystem with machine-neutral paths; integration tests build and destroy their
-own temp directory trees, so both suites pass on any machine.
+own temp directory trees, so both suites pass on any machine — they never start OpenCode and are
+unaffected by whichever plugin install (git, path, or none) is active on the machine.
+
+Git hooks run typecheck, the full test suite, and the lints on every commit; CI
+(`.github/workflows/ci.yml`) runs the same `just` recipes on pushes to `main` and on PRs.
 
 ## Docs
 
