@@ -41,6 +41,9 @@ docs-only), cut a new patch version instead.
 3. Tag that commit: `git tag -a vX.Y.Z -m "<one-line summary>"`.
 4. Push both: `git push && git push origin vX.Y.Z`.
 5. Confirm CI is green on the tagged commit before pinning to it or announcing it.
+6. Publish a GitHub Release for the tag with short notes: what changed and whether upgrading
+    needs any action. Tags alone notify nobody — Releases reach watchers and the repo's
+    `releases.atom` feed.
 
 Consumers on a pinned spec upgrade by bumping their ref — each ref is its own install cache key,
 so the new version installs fresh automatically. Unpinned installs never re-fetch: they must
