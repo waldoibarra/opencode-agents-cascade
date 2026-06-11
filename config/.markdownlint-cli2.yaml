@@ -1,4 +1,6 @@
 gitignore: true
+ignores:
+  - CLAUDE.md
 config:
   default: true
   # Italics uses underscores.
