@@ -20,6 +20,11 @@ install-tools:
 install-hooks:
   hk install
 
+# Run the plugin test suite with Bun.
+[group("Testing")]
+test:
+  bun test
+
 # Use committed to lint a commit message file.
 [private]
 [group("Linting")]

@@ -14,6 +14,10 @@ matching Claude Code precedence. Design and research → `PRD.md`. Core logic (p
 Before running any `just` recipe you haven't seen in this conversation, run `just help` to get the
 current list of available commands.
 
+| Command | Purpose |
+| --- | --- |
+| `just test` | Run the plugin test suite with Bun |
+
 ## Deep reference
 
 - Toolchain details → `docs/toolchain.md`
