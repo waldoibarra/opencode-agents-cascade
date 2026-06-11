@@ -31,11 +31,19 @@ Git hooks run typecheck, the full test suite, and the lints on every commit. CI 
 
 ## Local plugin install
 
-Reference the checkout directly in `~/.config/opencode/opencode.json` to develop against live
-code (absolute path specs load the working tree directly, no cache):
+Installing the plugin is how you _use_ it in your own OpenCode sessions; developing it requires
+no install at all — the tests never start OpenCode. The reason to install from a path _while
+developing_ is freshness: git installs are cached snapshots that never auto-update, so your
+sessions would run stale code between pins. An absolute path spec loads the working tree
+directly (no cache), so every session runs whatever is on disk right now.
+
+Reference the checkout in `~/.config/opencode/opencode.json`:
 
 ```json
 {
   "plugin": ["/absolute/path/to/opencode-agents-cascade"]
 }
 ```
+
+When you are not actively changing the plugin, prefer the git spec from the
+[readme](../README.md) — a pinned snapshot is predictable; a live working tree is not.

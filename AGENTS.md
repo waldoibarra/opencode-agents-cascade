@@ -16,6 +16,7 @@ current list of available commands.
 
 | Command | Purpose |
 | --- | --- |
+| `just setup` | Install toolchain (mise), JS dev deps, and git hooks |
 | `just test` | Run the full plugin test suite with Bun |
 | `just test-unit` | Run hermetic unit tests (no disk I/O) |
 | `just test-integration` | Run integration tests (real filesystem) |
