@@ -5,7 +5,7 @@ help:
 
 # Install all project dependencies.
 [group("Setup")]
-setup: install-tools install-hooks
+setup: install-tools install-deps install-hooks
 
 # Install tools with Mise.
 [group("Setup")]
@@ -13,6 +13,12 @@ setup: install-tools install-hooks
 install-tools:
   mise trust
   mise install
+
+# Install JS dev dependencies (typescript, type definitions).
+[group("Setup")]
+[private]
+install-deps:
+  bun install --frozen-lockfile
 
 # Install Git Hooks.
 [group("Setup")]
