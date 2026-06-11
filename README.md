@@ -1,5 +1,8 @@
 # opencode-agents-cascade
 
+[![Code checks](https://github.com/waldoibarra/opencode-agents-cascade/actions/workflows/code-checks.yml/badge.svg)](https://github.com/waldoibarra/opencode-agents-cascade/actions/workflows/code-checks.yml)
+[![Lint](https://github.com/waldoibarra/opencode-agents-cascade/actions/workflows/lint.yml/badge.svg)](https://github.com/waldoibarra/opencode-agents-cascade/actions/workflows/lint.yml)
+
 OpenCode plugin that makes instruction-file loading behave like Claude Code.
 
 ## Why
