@@ -14,9 +14,9 @@ hooks {
         glob = List("**/*.ts", "tsconfig.json", "package.json", "bun.lock")
         check = "just typecheck"
       }
-      ["test-unit"] {
+      ["test"] {
         glob = List("src/**/*.ts", "tests/**/*.ts", "package.json", "bun.lock")
-        check = "just test-unit"
+        check = "just test"
       }
     }
   }
