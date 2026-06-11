@@ -27,7 +27,7 @@ describe("sortBlocks", () => {
 
   it("places the deepest path (cwd) last so it gets the highest weight", () => {
     const sorted = sortBlocks([b("/a/b/c/AGENTS.md"), b("/a/AGENTS.md")])
-    expect(sorted[sorted.length - 1].path).toBe("/a/b/c/AGENTS.md")
+    expect(sorted.at(-1)?.path).toBe("/a/b/c/AGENTS.md")
   })
 
   it("breaks depth ties lexicographically and deterministically", () => {

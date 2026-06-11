@@ -12,8 +12,8 @@ function fakeFs(files: Record<string, string>) {
   }
 }
 
-function headerPaths(system0: string): string[] {
-  return parseSystem(system0).blocks.map((b) => b.path)
+function headerPaths(system0: string | undefined): string[] {
+  return parseSystem(system0 ?? "").blocks.map((b) => b.path)
 }
 
 describe("transformSystem — PRD example end-to-end", () => {
@@ -49,7 +49,7 @@ describe("transformSystem — PRD example end-to-end", () => {
   it("preserves the base prompt and every block's content", () => {
     const system = [nativeSystem]
     transformSystem({ system, directory, worktree, sessionID: "ses_1", ...fs })
-    const parsed = parseSystem(system[0])
+    const parsed = parseSystem(system[0] ?? "")
     expect(parsed.base).toBe(BASE)
     expect(parsed.blocks.map((b) => b.content)).toEqual([
       "global",
@@ -185,7 +185,7 @@ describe("transformSystem — robustness", () => {
       sessionID: "s",
       ...fakeFs({ "/Users/me/AGENTS.md": "fresh read" }),
     })
-    const parsed = parseSystem(system[0])
+    const parsed = parseSystem(system[0] ?? "")
     expect(parsed.blocks).toEqual([
       { path: "/Users/me/AGENTS.md", content: "already loaded somehow" },
     ])

@@ -25,6 +25,11 @@ install-hooks:
 test:
   bun test
 
+# Typecheck all TypeScript sources with tsc.
+[group("Testing")]
+typecheck:
+  bunx tsc --noEmit
+
 # Use committed to lint a commit message file.
 [private]
 [group("Linting")]

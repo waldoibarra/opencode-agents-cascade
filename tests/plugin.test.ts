@@ -48,7 +48,7 @@ describe("AgentsCascadePlugin (hook against a real filesystem)", () => {
 
     await hooks["experimental.chat.system.transform"]({ sessionID: "ses_1", model: {} }, output)
 
-    const paths = parseSystem(output.system[0]).blocks.map((b) => b.path)
+    const paths = parseSystem(output.system[0] ?? "").blocks.map((b) => b.path)
     // The walk also covers real directories above the temp root; assert the
     // expected paths appear as an ordered subsequence to stay hermetic.
     const expected = [
@@ -61,7 +61,7 @@ describe("AgentsCascadePlugin (hook against a real filesystem)", () => {
     const indexes = expected.map((p) => paths.indexOf(p))
     expect(indexes).not.toContain(-1)
     expect([...indexes].sort((a, b) => a - b)).toEqual(indexes)
-    expect(parseSystem(output.system[0]).base).toBe("base prompt")
+    expect(parseSystem(output.system[0] ?? "").base).toBe("base prompt")
   })
 
   it("is a no-op for non-git projects", async () => {

@@ -47,20 +47,18 @@ function isHeaderLine(line: string): boolean {
  */
 export function parseSystem(text: string): ParsedSystem {
   const lines = text.split("\n")
-  const headerIndexes: number[] = []
-  for (let i = 0; i < lines.length; i++) {
-    if (isHeaderLine(lines[i])) headerIndexes.push(i)
-  }
-  if (headerIndexes.length === 0) return { base: text, blocks: [] }
-
-  const base = lines.slice(0, headerIndexes[0]).join("\n")
-  const blocks = headerIndexes.map((start, i) => {
-    const end = i + 1 < headerIndexes.length ? headerIndexes[i + 1] : lines.length
-    return {
-      path: lines[start].slice(INSTRUCTION_HEADER.length),
-      content: lines.slice(start + 1, end).join("\n"),
-    }
+  const headers: { index: number; path: string }[] = []
+  lines.forEach((line, index) => {
+    if (isHeaderLine(line)) headers.push({ index, path: line.slice(INSTRUCTION_HEADER.length) })
   })
+  const first = headers[0]
+  if (first === undefined) return { base: text, blocks: [] }
+
+  const base = lines.slice(0, first.index).join("\n")
+  const blocks = headers.map((header, i) => ({
+    path: header.path,
+    content: lines.slice(header.index + 1, headers[i + 1]?.index ?? lines.length).join("\n"),
+  }))
   return { base, blocks }
 }
 

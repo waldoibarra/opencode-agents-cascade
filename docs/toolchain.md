@@ -8,6 +8,7 @@ All tools are managed by mise and pinned to `latest` in `mise.toml`.
 | --- | --- | --- | --- |
 | [mise](https://mise.jdx.dev) | Tool version manager | `mise.toml` | system |
 | [bun](https://bun.sh) | Plugin runtime and test runner (`bun test`) | `package.json` | mise |
+| [typescript](https://www.typescriptlang.org) | Typechecker (`just typecheck`) | `tsconfig.json` | bun (devDependency) |
 | [just](https://just.systems) | Task runner | `justfile` | system |
 | [hk](https://github.com/jdx/hk) | Git hooks manager | `hk.pkl` | mise |
 | [committed](https://github.com/crate-ci/committed) | Commit message linter | `config/committed.toml` | mise |

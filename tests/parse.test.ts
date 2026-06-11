@@ -34,7 +34,7 @@ describe("parseSystem", () => {
       "/a/b/CLAUDE.md",
       "/a/b/c/AGENTS.md",
     ])
-    expect(parsed.blocks[1].content).toBe("beta\nwith two lines")
+    expect(parsed.blocks[1]?.content).toBe("beta\nwith two lines")
   })
 
   it("parses a block with empty content", () => {
@@ -62,7 +62,7 @@ describe("parseSystem", () => {
     const text = [BASE, block("/a/AGENTS.md", content)].join("\n")
     const parsed = parseSystem(text)
     expect(parsed.blocks).toHaveLength(1)
-    expect(parsed.blocks[0].content).toBe(content)
+    expect(parsed.blocks[0]?.content).toBe(content)
   })
 
   it("known limitation: a content line with an absolute path header splits the block", () => {
@@ -74,7 +74,7 @@ describe("parseSystem", () => {
   it("keeps trailing text after the last block inside that block", () => {
     const text = [BASE, block("/a/AGENTS.md", "alpha"), "user supplied system prompt"].join("\n")
     const parsed = parseSystem(text)
-    expect(parsed.blocks[0].content).toBe("alpha\nuser supplied system prompt")
+    expect(parsed.blocks[0]?.content).toBe("alpha\nuser supplied system prompt")
   })
 
   it("round-trips through buildSystem", () => {

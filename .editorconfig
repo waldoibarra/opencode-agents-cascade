@@ -12,5 +12,9 @@ max_line_length = 100
 [*.md]
 max_line_length = off
 
+# Machine-generated lockfile.
+[bun.lock]
+max_line_length = off
+
 [*.py]
 indent_size = 4

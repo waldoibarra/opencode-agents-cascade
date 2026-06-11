@@ -17,6 +17,7 @@ current list of available commands.
 | Command | Purpose |
 | --- | --- |
 | `just test` | Run the plugin test suite with Bun |
+| `just typecheck` | Typecheck all TypeScript sources with tsc |
 
 ## Deep reference
 
