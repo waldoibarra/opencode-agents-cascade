@@ -36,6 +36,17 @@ Add the plugin to `~/.config/opencode/opencode.json`:
 
 Pin to a tag or commit with `#v1.0.0` / `#<sha>` at the end of the spec.
 
+### Upgrading
+
+OpenCode installs git-spec plugins once and never re-fetches them. To pick up a new version,
+pin a different ref, or clear the cached install and start a new session:
+
+```sh
+rm -rf ~/.cache/opencode/packages/opencode-agents-cascade*
+```
+
+The cache lives under `$XDG_CACHE_HOME/opencode/packages/` when that variable is set.
+
 ## Use
 
 Nothing to configure: start OpenCode inside any git repo and the ancestor instructions are
