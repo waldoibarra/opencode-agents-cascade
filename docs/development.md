@@ -44,7 +44,7 @@ docs-only), cut a new patch version instead.
 
 Consumers on a pinned spec upgrade by bumping their ref — each ref is its own install cache key,
 so the new version installs fresh automatically. Unpinned installs never re-fetch: they must
-clear the cached install, as documented in the [readme](../README.md#upgrading).
+clear the cached install, as documented in the [readme](/README.md#upgrading).
 
 ## Local plugin install
 
@@ -63,4 +63,4 @@ Reference the checkout in `~/.config/opencode/opencode.json`:
 ```
 
 When you are not actively changing the plugin, prefer the git spec from the
-[readme](../README.md) — a pinned snapshot is predictable; a live working tree is not.
+[readme](/README.md) — a pinned snapshot is predictable; a live working tree is not.
