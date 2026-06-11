@@ -4,8 +4,10 @@ Navigation index for LLMs. Read this first; fetch linked docs on demand.
 
 ## Project
 
-`opencode-agents-cascade` — scaffolding for a cascading AI-agent workflow. Currently contains
-toolchain bootstrap only; agent logic TBD.
+`opencode-agents-cascade` — OpenCode plugin that injects `AGENTS.md`/`CLAUDE.md` files from
+directories above the git worktree root and reorders all instruction blocks outermost-first,
+matching Claude Code precedence. Design and research → `PRD.md`. Core logic (pure functions) →
+`src/cascade.ts`; plugin entry → `src/index.ts`; tests → `tests/`.
 
 ## Key commands
 
@@ -19,7 +21,7 @@ current list of available commands.
 
 ## Doc maintenance (mandatory)
 
-You are responsible for keeping this documentation accurate. Apply these rules on every task:
+You are responsible for keeping all documentation accurate. Apply these rules on every task:
 
 - Modified `mise.toml` or added/removed a tool → update `docs/toolchain.md`
 - Modified `hk.pkl`, `config/committed.toml`, or `config/.markdownlint-cli2.yaml` → update

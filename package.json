@@ -1,0 +1,14 @@
+{
+  "name": "opencode-agents-cascade",
+  "version": "0.1.0",
+  "description": "OpenCode plugin: load AGENTS.md/CLAUDE.md above the git worktree root",
+  "type": "module",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "bun test"
+  }
+}
