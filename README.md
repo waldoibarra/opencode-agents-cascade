@@ -32,7 +32,7 @@ reference the checkout directly:
 
 ```json
 {
-  "plugin": ["/absolute/path/to/opencode-agents-cascade"]
+  "plugin": ["~/path/to/opencode-agents-cascade"]
 }
 ```
 
