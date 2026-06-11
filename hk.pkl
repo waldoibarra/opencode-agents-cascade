@@ -10,6 +10,14 @@ hooks {
         glob = List("**/*.md", "config/.markdownlint-cli2.yaml")
         check = "just lint-md"
       }
+      ["typecheck"] {
+        glob = List("**/*.ts", "tsconfig.json", "package.json", "bun.lock")
+        check = "just typecheck"
+      }
+      ["test-unit"] {
+        glob = List("src/**/*.ts", "tests/**/*.ts", "package.json", "bun.lock")
+        check = "just test-unit"
+      }
     }
   }
   ["commit-msg"] {
