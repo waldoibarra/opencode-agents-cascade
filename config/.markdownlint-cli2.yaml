@@ -1,0 +1,23 @@
+gitignore: true
+config:
+  default: true
+  # Italics uses underscores.
+  emphasis-style:
+    style: underscore
+  # Bold uses asterisks.
+  strong-style:
+    style: asterisk
+  # Unordered list markers must be dashes, consistent with Prettier's default.
+  ul-style:
+    style: dash
+  # Line length matches .editorconfig max_line_length (100).
+  # Tables and code blocks are excluded because they can't always be wrapped.
+  line-length:
+    line_length: 100
+    code_blocks: false
+    tables: false
+  # Articles use both YAML frontmatter title: and an H1 heading by design.
+  # Disable frontmatter title detection so only duplicate H1s are flagged.
+  no-multiple-blanks: true
+  single-title:
+    front_matter_title: ""

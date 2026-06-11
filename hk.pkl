@@ -1,0 +1,22 @@
+amends "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Config.pkl"
+
+hooks {
+  ["pre-commit"] {
+    steps {
+      ["editorconfig-checker"] {
+        check = "just lint-ec"
+      }
+      ["markdownlint-cli2"] {
+        glob = List("**/*.md", "config/.markdownlint-cli2.yaml")
+        check = "just lint-md"
+      }
+    }
+  }
+  ["commit-msg"] {
+    steps {
+      ["committed"] {
+        check = "just lint-commit {{commit_msg_file}}"
+      }
+    }
+  }
+}
