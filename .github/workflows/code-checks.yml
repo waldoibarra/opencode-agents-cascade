@@ -1,0 +1,40 @@
+name: Code checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "tsconfig.json"
+      - "package.json"
+      - "bun.lock"
+      - "mise.toml"
+      - "justfile"
+      - ".github/workflows/code-checks.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "tsconfig.json"
+      - "package.json"
+      - "bun.lock"
+      - "mise.toml"
+      - "justfile"
+      - ".github/workflows/code-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Install dev dependencies
+        run: just install-deps
+      - name: Typecheck
+        run: just typecheck
+      - name: Test
+        run: just test
