@@ -62,12 +62,17 @@ it never breaks the chat request.
 ## Development
 
 ```sh
-just setup   # install toolchain (mise) and git hooks
-just test    # run the test suite with Bun
+just setup              # install toolchain (mise) and git hooks
+just test               # run the full test suite with Bun
+just test-unit          # hermetic unit tests (no disk I/O)
+just test-integration   # integration tests (real filesystem)
+just typecheck          # strict tsc over src and tests
 ```
 
 The core logic lives in `src/cascade.ts` as pure functions (parser, sorter, walker, transform);
-`src/index.ts` is the thin plugin entry that wires in the real filesystem.
+`src/index.ts` is the thin plugin entry that wires in the real filesystem. Unit tests run on an
+in-memory fake filesystem with machine-neutral paths; integration tests build and destroy their
+own temp directory trees, so both suites pass on any machine.
 
 ## Docs
 

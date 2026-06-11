@@ -16,7 +16,9 @@ current list of available commands.
 
 | Command | Purpose |
 | --- | --- |
-| `just test` | Run the plugin test suite with Bun |
+| `just test` | Run the full plugin test suite with Bun |
+| `just test-unit` | Run hermetic unit tests (no disk I/O) |
+| `just test-integration` | Run integration tests (real filesystem) |
 | `just typecheck` | Typecheck all TypeScript sources with tsc |
 
 ## Deep reference

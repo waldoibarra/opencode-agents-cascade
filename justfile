@@ -20,10 +20,20 @@ install-tools:
 install-hooks:
   hk install
 
-# Run the plugin test suite with Bun.
+# Run the full plugin test suite with Bun.
 [group("Testing")]
 test:
   bun test
+
+# Run hermetic unit tests (no disk I/O).
+[group("Testing")]
+test-unit:
+  bun test tests/unit
+
+# Run integration tests (real filesystem).
+[group("Testing")]
+test-integration:
+  bun test tests/integration
 
 # Typecheck all TypeScript sources with tsc.
 [group("Testing")]

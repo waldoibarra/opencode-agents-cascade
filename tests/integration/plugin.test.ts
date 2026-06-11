@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test"
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { INSTRUCTION_HEADER, parseSystem } from "../src/cascade"
-import { AgentsCascadePlugin } from "../src/index"
+import { INSTRUCTION_HEADER, parseSystem } from "../../src/cascade"
+import { AgentsCascadePlugin } from "../../src/index"
 
 const block = (p: string, content: string) => `${INSTRUCTION_HEADER}${p}\n${content}`
 

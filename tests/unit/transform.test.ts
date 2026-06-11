@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { INSTRUCTION_HEADER, parseSystem, transformSystem } from "../src/cascade"
+import { INSTRUCTION_HEADER, parseSystem, transformSystem } from "../../src/cascade"
 
 const BASE = "You are opencode.\nBase prompt second line."
 const block = (path: string, content: string) => `${INSTRUCTION_HEADER}${path}\n${content}`

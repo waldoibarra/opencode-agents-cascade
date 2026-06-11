@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { INSTRUCTION_HEADER, buildSystem, parseSystem } from "../src/cascade"
+import { INSTRUCTION_HEADER, buildSystem, parseSystem } from "../../src/cascade"
 
 const BASE = "You are opencode, an AI coding agent.\nLine two of the base prompt."
 

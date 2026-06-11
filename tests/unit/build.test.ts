@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { buildSystem, parseSystem } from "../src/cascade"
+import { buildSystem, parseSystem } from "../../src/cascade"
 
 describe("buildSystem", () => {
   it("returns just the base when there are no blocks", () => {

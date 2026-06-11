@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { isChainBlock, sortBlocks } from "../src/cascade"
+import { isChainBlock, sortBlocks } from "../../src/cascade"
 
 const b = (path: string) => ({ path, content: `content of ${path}` })
 
