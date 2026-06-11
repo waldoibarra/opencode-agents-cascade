@@ -26,6 +26,7 @@ current list of available commands.
 
 - Plugin mechanism and limitations → `docs/how-it-works.md`
 - Development guide (commands, architecture, tests) → `docs/development.md`
+- Release procedure (version bump, tag, push) → `docs/development.md`
 - Toolchain details → `docs/toolchain.md`
 - Hook triggers and checks → `docs/hooks.md`
 - CI pipelines (same recipes as the hooks) → `.github/workflows/`
@@ -38,6 +39,7 @@ You are responsible for keeping all documentation accurate. Apply these rules on
 - Modified `hk.pkl`, `config/committed.toml`, or `config/.markdownlint-cli2.yaml` → update
   `docs/hooks.md`
 - Added a `justfile` recipe → add a row to the key commands table in this file
+- Bumping the plugin version → follow the release steps in `docs/development.md`; never retag
 - Prefer removing stale content over leaving it. A wrong doc is worse than no doc.
 - Doc updates must be in the same commit as the change that made them necessary.
 - Before committing a change, evaluate if the docs need updating.

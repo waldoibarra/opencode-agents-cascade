@@ -29,6 +29,23 @@ Git hooks run typecheck, the full test suite, and the lints on every commit. CI 
 `just` recipes: code checks on code-affecting paths, lints on every push and PR
 (`.github/workflows/`).
 
+## Releasing
+
+Never move a published tag — one name maps to one immutable tree forever, and OpenCode's install
+cache never re-fetches a ref it has already resolved. If a release needs a change (even
+docs-only), cut a new patch version instead.
+
+1. Bump `version` in `package.json` following semver: patch for fixes and docs, minor for new
+    behavior, major for breaking changes.
+2. Commit it as `chore: release vX.Y.Z`.
+3. Tag that commit: `git tag -a vX.Y.Z -m "<one-line summary>"`.
+4. Push both: `git push && git push origin vX.Y.Z`.
+5. Confirm CI is green on the tagged commit before pinning to it or announcing it.
+
+Consumers on a pinned spec upgrade by bumping their ref — each ref is its own install cache key,
+so the new version installs fresh automatically. Unpinned installs never re-fetch: they must
+clear the cached install, as documented in the [readme](../README.md#upgrading).
+
 ## Local plugin install
 
 Installing the plugin is how you _use_ it in your own OpenCode sessions; developing it requires
