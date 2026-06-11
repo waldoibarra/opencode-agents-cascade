@@ -1,4 +1,5 @@
 [tools]
+bun = "latest"
 editorconfig-checker = "latest"
 committed = "latest"
 hk = "latest"
