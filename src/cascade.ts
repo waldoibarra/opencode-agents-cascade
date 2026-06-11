@@ -194,8 +194,11 @@ export interface TransformInput {
 export function transformSystem(input: TransformInput): void {
   const { system, directory, worktree, sessionID, exists, read } = input
 
-  // Non-git project: OpenCode already walks to "/" natively.
-  if (!worktree || path.resolve(worktree) === "/") return
+  // Non-git projects report the worktree sentinel "/": OpenCode already
+  // walks to "/" natively so there is nothing to inject (the collector
+  // returns no candidates for a root worktree), but the native order is
+  // still innermost-first and needs the same reordering as everyone else.
+  if (!worktree) return
   if (system.length === 0 || typeof system[0] !== "string") return
 
   const parsed = parseSystem(system[0])

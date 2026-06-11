@@ -18,11 +18,11 @@ layering. See [PRD.md](PRD.md) for the full research.
 
 - **Injects missing ancestors** — walks from the worktree root's parent up to `/` and loads every
   instruction file found (one per directory, `AGENTS.md` preferred over `CLAUDE.md`).
-- **Fixes precedence** — reorders all instruction blocks outermost-first, so the file closest to
-  your cwd has the highest precedence, matching Claude Code.
+- **Fixes precedence** — reorders all instruction blocks outermost-first, with or without a git
+  repo in the hierarchy, so the file closest to your cwd has the highest precedence, matching
+  Claude Code.
 - **Stays out of the way** — the global config block is untouched, per-prompt custom system text
-  keeps its position, non-git projects are a no-op, and any failure degrades gracefully instead
-  of breaking the chat request.
+  keeps its position, and any failure degrades gracefully instead of breaking the chat request.
 
 ## Install
 

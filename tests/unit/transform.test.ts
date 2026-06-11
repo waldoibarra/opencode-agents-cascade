@@ -104,13 +104,6 @@ describe("transformSystem — PRD example end-to-end", () => {
 describe("transformSystem — no-op guards", () => {
   const fs = fakeFs({ "/Users/AGENTS.md": "users level" })
 
-  it("does nothing for non-git projects (worktree sentinel '/')", () => {
-    const system = [`${BASE}\n${block("/Users/me/AGENTS.md", "x")}`]
-    const before = system[0]
-    transformSystem({ system, directory: "/Users/me", worktree: "/", sessionID: "s", ...fs })
-    expect(system[0]).toBe(before)
-  })
-
   it("does nothing for an empty worktree", () => {
     const system = [BASE]
     transformSystem({ system, directory: "/Users/me", worktree: "", sessionID: "s", ...fs })
@@ -140,6 +133,52 @@ describe("transformSystem — no-op guards", () => {
     const system = ["Generate an agent definition."]
     transformSystem({ system, directory: "/Users/me/p", worktree: "/Users/me/p", ...fs })
     expect(system[0]).toBe("Generate an agent definition.")
+  })
+})
+
+describe("transformSystem — non-git projects (worktree sentinel '/')", () => {
+  it("reorders the native innermost-first chain without injecting", () => {
+    // OpenCode walks to "/" natively when there is no git repo, but in
+    // innermost-first order — the inversion still needs fixing.
+    const system = [
+      [
+        BASE,
+        block("/Users/me/.config/opencode/AGENTS.md", "global"),
+        block("/Users/me/projects/test-load-order/AGENTS.md", "cwd"),
+        block("/Users/me/projects/AGENTS.md", "projects"),
+        block("/Users/me/AGENTS.md", "home"),
+        block("/Users/AGENTS.md", "users"),
+      ].join("\n"),
+    ]
+    transformSystem({
+      system,
+      directory: "/Users/me/projects/test-load-order",
+      worktree: "/",
+      sessionID: "s",
+      // Exists on disk but must not be collected: nothing is missing when
+      // OpenCode already walked the whole hierarchy itself.
+      ...fakeFs({ "/AGENTS.md": "root" }),
+    })
+    expect(headerPaths(system[0])).toEqual([
+      "/Users/me/.config/opencode/AGENTS.md",
+      "/Users/AGENTS.md",
+      "/Users/me/AGENTS.md",
+      "/Users/me/projects/AGENTS.md",
+      "/Users/me/projects/test-load-order/AGENTS.md",
+    ])
+  })
+
+  it("leaves a single native block untouched", () => {
+    const system = [`${BASE}\n${block("/Users/me/AGENTS.md", "x")}`]
+    const before = system[0]
+    transformSystem({
+      system,
+      directory: "/Users/me",
+      worktree: "/",
+      sessionID: "s",
+      ...fakeFs({}),
+    })
+    expect(system[0]).toBe(before)
   })
 })
 

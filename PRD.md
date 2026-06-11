@@ -131,8 +131,10 @@ themselves git worktrees are not treated specially — the walk is uniform.
 
 ### No git worktree
 
-If the cwd is not inside a git worktree, OpenCode already walks to `/` natively. The plugin is a
-no-op in this case.
+If the cwd is not inside a git worktree, OpenCode already walks to `/` natively, so there is
+nothing to inject — but its order is innermost-first there too, so the reordering must still run.
+(An earlier revision of this PRD wrongly specified a full no-op; that produced an inverted-order
+bug found in manual testing.)
 
 ## Testing
 

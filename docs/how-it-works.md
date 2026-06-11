@@ -19,9 +19,10 @@ The result matches Claude Code: the file closest to the cwd appears last and get
 LLM weight; `/` is the outermost and weakest. The global config block
 (`~/.config/opencode/AGENTS.md`) is left untouched at the start of the instructions.
 
-If the cwd is not inside a git worktree, the plugin is a no-op — OpenCode already walks to `/`
-natively in that case. If parsing finds no blocks (no instruction files loaded, or the upstream
-format changed), the plugin appends the ancestor files without reordering. Any unexpected failure
+If the cwd is not inside a git worktree, OpenCode already walks to `/` natively, so the plugin
+injects nothing — but the native order is innermost-first there too, so the reordering still
+applies. If parsing finds no blocks (no instruction files loaded, or the upstream format
+changed), the plugin appends the ancestor files without reordering. Any unexpected failure
 degrades to a no-op; it never breaks the chat request.
 
 ## Runtime

@@ -64,12 +64,22 @@ describe("AgentsCascadePlugin (hook against a real filesystem)", () => {
     expect(parseSystem(output.system[0] ?? "").base).toBe("base prompt")
   })
 
-  it("is a no-op for non-git projects", async () => {
-    const hooks = await AgentsCascadePlugin({ directory: root, worktree: "/" })
-    const before = ["base prompt", block(path.join(root, "AGENTS.md"), "root marker")].join("\n")
-    const output = { system: [before] }
+  it("reorders without injecting for non-git projects", async () => {
+    const hooks = await AgentsCascadePlugin({ directory, worktree: "/" })
+    const output = {
+      system: [
+        [
+          "base prompt",
+          block(path.join(directory, "AGENTS.md"), "sub marker"),
+          block(path.join(worktree, "AGENTS.md"), "work marker"),
+        ].join("\n"),
+      ],
+    }
     await hooks["experimental.chat.system.transform"]({ sessionID: "ses_1", model: {} }, output)
-    expect(output.system[0]).toBe(before)
+    const paths = parseSystem(output.system[0] ?? "").blocks.map((b) => b.path)
+    // Inverted order fixed; the real files above (root AGENTS.md, mid
+    // CLAUDE.md) stay out because OpenCode walks the hierarchy itself.
+    expect(paths).toEqual([path.join(worktree, "AGENTS.md"), path.join(directory, "AGENTS.md")])
   })
 
   it("never throws, even on a malformed output object", async () => {
