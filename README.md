@@ -61,8 +61,11 @@ it never breaks the chat request.
 
 - Blocks are recognized by their `Instructions from:` header line, so file content that itself
   contains such a line (pointing at an absolute path) splits a block in two.
-- Text OpenCode appends after the last block (e.g. a user-level system prompt) travels with that
-  block when reordering.
+- OpenCode appends per-prompt custom system text (the `system` field of a prompt request) after
+  the last block with no delimiter. The plugin recovers the boundary by re-reading the last
+  block's file and keeps that text at the very end, where OpenCode put it. It travels with the
+  block only when the boundary cannot be recovered: the file changed on disk mid-request, or the
+  last block is a remote URL.
 
 ## Development
 

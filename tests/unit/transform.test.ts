@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test"
-import { INSTRUCTION_HEADER, parseSystem, transformSystem } from "../../src/cascade"
+import {
+  INSTRUCTION_HEADER,
+  extractTrailingText,
+  parseSystem,
+  transformSystem,
+} from "../../src/cascade"
 
 const BASE = "You are opencode.\nBase prompt second line."
 const block = (path: string, content: string) => `${INSTRUCTION_HEADER}${path}\n${content}`
@@ -167,6 +172,110 @@ describe("transformSystem — fallback append (no parseable blocks)", () => {
       ...fakeFs({}),
     })
     expect(system[0]).toBe(BASE)
+  })
+})
+
+describe("extractTrailingText", () => {
+  const read = (files: Record<string, string>) => (p: string) => files[p]
+
+  it("splits appended text off the last block when the file matches", () => {
+    const blocks = [
+      { path: "/a/AGENTS.md", content: "alpha" },
+      { path: "/a/b/AGENTS.md", content: "beta\ncustom system prompt\nsecond line" },
+    ]
+    const result = extractTrailingText(blocks, read({ "/a/b/AGENTS.md": "beta" }))
+    expect(result.trailing).toBe("custom system prompt\nsecond line")
+    expect(result.blocks).toEqual([
+      { path: "/a/AGENTS.md", content: "alpha" },
+      { path: "/a/b/AGENTS.md", content: "beta" },
+    ])
+  })
+
+  it("returns no trailing text when the block equals the file exactly", () => {
+    const blocks = [{ path: "/a/AGENTS.md", content: "alpha" }]
+    const result = extractTrailingText(blocks, read({ "/a/AGENTS.md": "alpha" }))
+    expect(result.trailing).toBe("")
+    expect(result.blocks).toEqual(blocks)
+  })
+
+  it("does not split when the file changed since OpenCode read it", () => {
+    const blocks = [{ path: "/a/AGENTS.md", content: "alpha\ntrailing" }]
+    const result = extractTrailingText(blocks, read({ "/a/AGENTS.md": "different now" }))
+    expect(result.trailing).toBe("")
+    expect(result.blocks).toEqual(blocks)
+  })
+
+  it("does not split mid-line when content merely starts with the file text", () => {
+    const blocks = [{ path: "/a/AGENTS.md", content: "alphabet soup" }]
+    const result = extractTrailingText(blocks, read({ "/a/AGENTS.md": "alpha" }))
+    expect(result.trailing).toBe("")
+    expect(result.blocks).toEqual(blocks)
+  })
+
+  it("never attempts to split URL blocks or unreadable files", () => {
+    const urlBlocks = [{ path: "https://example.com/r.md", content: "remote\ntrailing" }]
+    expect(extractTrailingText(urlBlocks, read({})).trailing).toBe("")
+    const fileBlocks = [{ path: "/a/AGENTS.md", content: "alpha\ntrailing" }]
+    expect(extractTrailingText(fileBlocks, read({})).trailing).toBe("")
+  })
+
+  it("handles empty input", () => {
+    expect(extractTrailingText([], read({}))).toEqual({ blocks: [], trailing: "" })
+  })
+})
+
+describe("transformSystem — custom system text stays last", () => {
+  const directory = "/Users/me/projects/repo"
+  const worktree = "/Users/me/projects/repo"
+  const userSystem = "Always answer in haiku.\nNo exceptions."
+
+  it("keeps per-prompt system text at the end across reordering", () => {
+    // Native order: global, cwd file, worktree-root file, then the
+    // custom system text glued onto the last block by the \n join.
+    const system = [
+      [
+        BASE,
+        block("/Users/me/.config/opencode/AGENTS.md", "global"),
+        block(`${directory}/sub/AGENTS.md`, "inner"),
+        block(`${directory}/AGENTS.md`, `outer\n${userSystem}`),
+      ].join("\n"),
+    ]
+    transformSystem({
+      system,
+      directory: `${directory}/sub`,
+      worktree,
+      sessionID: "s",
+      ...fakeFs({
+        "/Users/me/AGENTS.md": "home",
+        [`${directory}/AGENTS.md`]: "outer",
+        [`${directory}/sub/AGENTS.md`]: "inner",
+      }),
+    })
+    expect(system[0]).toBe(
+      [
+        BASE,
+        block("/Users/me/.config/opencode/AGENTS.md", "global"),
+        block("/Users/me/AGENTS.md", "home"),
+        block(`${directory}/AGENTS.md`, "outer"),
+        block(`${directory}/sub/AGENTS.md`, "inner"),
+        userSystem,
+      ].join("\n"),
+    )
+  })
+
+  it("is idempotent with trailing text present", () => {
+    const system = [
+      [BASE, block(`${directory}/AGENTS.md`, `outer\n${userSystem}`)].join("\n"),
+    ]
+    const fs = fakeFs({
+      "/Users/me/AGENTS.md": "home",
+      [`${directory}/AGENTS.md`]: "outer",
+    })
+    transformSystem({ system, directory, worktree, sessionID: "s", ...fs })
+    const once = system[0]
+    transformSystem({ system, directory, worktree, sessionID: "s", ...fs })
+    expect(system[0]).toBe(once)
+    expect(once?.endsWith(userSystem)).toBe(true)
   })
 })
 

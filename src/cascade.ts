@@ -144,6 +144,34 @@ export function isChainBlock(block: Block, directory: string): boolean {
   return cwd === dir || cwd.startsWith(dir === "/" ? "/" : dir + "/")
 }
 
+/**
+ * OpenCode appends per-prompt custom system text (PromptInput.system) after
+ * the last instruction block, and the joined string gives the parser no
+ * delimiter to spot the boundary. Re-reading the last block's file recovers
+ * it: whatever follows the file's verbatim content must be appended text.
+ * Splitting it off lets the transform keep it at the very end — its
+ * original, highest-precedence position — instead of dragging it wherever
+ * the last block sorts to. Falls back to no split (text travels with the
+ * block, the pre-existing behavior) when the file is unreadable, changed
+ * since OpenCode read it, or the last block is a remote URL.
+ */
+export function extractTrailingText(
+  blocks: Block[],
+  read: (p: string) => string | undefined,
+): { blocks: Block[]; trailing: string } {
+  const last = blocks[blocks.length - 1]
+  if (last === undefined || !last.path.startsWith("/")) return { blocks, trailing: "" }
+  const file = read(last.path)
+  if (file === undefined || file === "" || last.content === file) return { blocks, trailing: "" }
+  if (!last.content.startsWith(file) || last.content[file.length] !== "\n") {
+    return { blocks, trailing: "" }
+  }
+  return {
+    blocks: [...blocks.slice(0, -1), { path: last.path, content: file }],
+    trailing: last.content.slice(file.length + 1),
+  }
+}
+
 export interface TransformInput {
   /** The hook's output.system array; system[0] is rewritten in place. */
   system: string[]
@@ -171,7 +199,8 @@ export function transformSystem(input: TransformInput): void {
   if (system.length === 0 || typeof system[0] !== "string") return
 
   const parsed = parseSystem(system[0])
-  const nativePaths = new Set(parsed.blocks.map((b) => path.resolve(b.path)))
+  const { blocks: nativeBlocks, trailing } = extractTrailingText(parsed.blocks, read)
+  const nativePaths = new Set(nativeBlocks.map((b) => path.resolve(b.path)))
 
   const injected: Block[] = []
   for (const file of collectAncestorFiles(worktree, exists)) {
@@ -181,7 +210,7 @@ export function transformSystem(input: TransformInput): void {
     injected.push({ path: file, content })
   }
 
-  if (parsed.blocks.length === 0) {
+  if (nativeBlocks.length === 0) {
     // Nothing parseable: either no instruction files were loaded, or the
     // header format changed. Degrade gracefully — append, never reorder.
     // Without a sessionID this is an internal prompt (e.g. agent
@@ -191,13 +220,14 @@ export function transformSystem(input: TransformInput): void {
     return
   }
 
-  if (injected.length === 0 && parsed.blocks.length === 1) return
+  if (injected.length === 0 && nativeBlocks.length === 1) return
 
   const chain: Block[] = []
   const others: Block[] = []
-  for (const block of parsed.blocks) {
+  for (const block of nativeBlocks) {
     ;(isChainBlock(block, directory) ? chain : others).push(block)
   }
 
-  system[0] = buildSystem(parsed.base, [...others, ...sortBlocks([...chain, ...injected])])
+  const rebuilt = buildSystem(parsed.base, [...others, ...sortBlocks([...chain, ...injected])])
+  system[0] = trailing === "" ? rebuilt : `${rebuilt}\n${trailing}`
 }
