@@ -31,11 +31,11 @@ Git hooks run typecheck, the full test suite, and the lints on every commit. CI 
 
 ## Local plugin install
 
-Reference the checkout directly in `opencode.json` to develop against live code (path specs load
-the working tree, no cache):
+Reference the checkout directly in `~/.config/opencode/opencode.json` to develop against live
+code (absolute path specs load the working tree directly, no cache):
 
 ```json
 {
-  "plugin": ["~/path/to/opencode-agents-cascade"]
+  "plugin": ["/absolute/path/to/opencode-agents-cascade"]
 }
 ```
