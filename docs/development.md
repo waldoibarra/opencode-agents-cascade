@@ -14,26 +14,27 @@ Toolchain details live in [toolchain.md](toolchain.md); git hook triggers in [ho
 
 ## Architecture
 
-The core logic lives in `src/cascade.ts` as pure functions (parser, sorter, walker, transform)
-with all filesystem access injected as parameters; `src/index.ts` is the thin plugin entry that
-wires in the real filesystem and shields the chat request from any failure.
+The core logic lives in `src/cascade.ts` and accepts injected filesystem callbacks.
+`src/index.ts` wires in the filesystem and catches thrown hook errors.
+The catch does not roll back changes already made to a prompt.
 
 ## Tests
 
-Unit tests run on an in-memory fake filesystem with machine-neutral paths (`/Users/me/...`);
-integration tests build and destroy their own temp directory trees. Both suites pass on any
-machine — they never start OpenCode and are unaffected by whichever plugin install (git, path,
-or none) is active.
+Unit tests use an in-memory filesystem with synthetic paths (`/Users/me/...`).
+Integration tests create temporary directory trees and do not start OpenCode.
+They may also encounter actual files above their temporary roots; assertions check ordered subsequences.
+An installed plugin is not needed to run these suites.
 
-Git hooks run typecheck, the full test suite, and the lints on every commit. CI runs the same
-`just` recipes: code checks on code-affecting paths, lints on every push and PR
-(`.github/workflows/`).
+Pre-commit hooks select checks by staged-file glob.
+Editorconfig always runs; Markdown, types, and tests run conditionally.
+The commit-message hook checks commit text separately.
+CI runs code checks on code-affecting paths; lint runs on every push to `main` and every PR.
+See [hook triggers](hooks.md) and `.github/workflows/` for their precise scope.
 
 ## Releasing
 
-Never move a published tag — one name maps to one immutable tree forever, and OpenCode's install
-cache never re-fetches a ref it has already resolved. If a release needs a change (even
-docs-only), cut a new patch version instead.
+Never move a published tag; existing installations may keep the cached revision.
+For a docs-only release, use a new patch version instead of moving an existing tag.
 
 1. Bump `version` in `package.json` following semver: patch for fixes and docs, minor for new
     behavior, major for breaking changes.
@@ -45,17 +46,14 @@ docs-only), cut a new patch version instead.
     needs any action. Tags alone notify nobody — Releases reach watchers and the repo's
     `releases.atom` feed.
 
-Consumers on a pinned spec upgrade by bumping their ref — each ref is its own install cache key,
-so the new version installs fresh automatically. Unpinned installs never re-fetch: they must
-clear the cached install, as documented in the [readme](/README.md#upgrading).
+Consumers on a pinned spec upgrade by changing its ref.
+See [upgrade instructions](install.md#upgrade) for cache limitations and unpinned installations.
 
 ## Local plugin install
 
-Installing the plugin is how you _use_ it in your own OpenCode sessions; developing it requires
-no install at all — the tests never start OpenCode. The reason to install from a path _while
-developing_ is freshness: git installs are cached snapshots that never auto-update, so your
-sessions would run stale code between pins. An absolute path spec loads the working tree
-directly (no cache), so every session runs whatever is on disk right now.
+Tests do not require an OpenCode plugin installation.
+To inspect local changes during development, reference the checkout through a path spec.
+Check the active session before assuming it has reloaded code from disk.
 
 Reference the checkout in `~/.config/opencode/opencode.json`:
 
@@ -65,5 +63,5 @@ Reference the checkout in `~/.config/opencode/opencode.json`:
 }
 ```
 
-When you are not actively changing the plugin, prefer the git spec from the
-[readme](/README.md) — a pinned snapshot is predictable; a live working tree is not.
+For ordinary use, see the [Git-backed installation](install.md#install).
+A pinned ref identifies a revision; a path spec points at your changing checkout.

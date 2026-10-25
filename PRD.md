@@ -1,16 +1,16 @@
 # PRD: OpenCode Ancestor Instructions Plugin
 
+This records the original problem, research assumptions, and design decisions.
+For current behavior, read [how it works](docs/how-it-works.md).
+For current installation, read [install and use](docs/install.md).
+The comparisons below describe the original research scenario, not a verified host contract.
+
 ## Problem
 
-OpenCode loads `AGENTS.md` instruction files only up to the current git worktree root. Claude Code,
-by contrast, walks from the filesystem root (`/`) all the way down to the cwd — loading `CLAUDE.md`
-from every ancestor directory, outermost first, ignoring git boundaries entirely. This means a user
-running OpenCode inside any git worktree misses instruction files that live in parent directories
-above the worktree root.
-
-OpenCode also injects within-worktree files in innermost-first order (cwd → worktree root), giving
-the outermost file the highest LLM weight. Claude Code does the opposite: outermost first, so the
-most specific file (cwd) has the highest precedence.
+The research scenario found OpenCode omitted instruction files above the current git worktree root.
+It also observed innermost-first ordering for files inside the worktree.
+Neither observation establishes current behavior across OpenCode versions or configurations.
+The plugin targets these gaps by adding missing ancestors and sorting the directory chain.
 
 ### Example
 
@@ -29,47 +29,45 @@ Directory structure:
           AGENTS.md
 ```
 
-**Claude Code** loads (in order, outermost first):
+**Original Claude Code comparison** assumed these files load outermost-first:
 
 1. `~/.claude/CLAUDE.md` (global)
 2. `/Users/CLAUDE.md`
 3. `~/CLAUDE.md`
 4. `~/projects/CLAUDE.md`
 5. `~/projects/my-repo/CLAUDE.md`
-6. `~/projects/my-repo/sub-project/CLAUDE.md` (cwd, highest precedence)
+6. `~/projects/my-repo/sub-project/CLAUDE.md` (cwd)
 
-**OpenCode today** loads:
+**Original OpenCode observation** listed:
 
 1. `~/.config/opencode/AGENTS.md` (global)
-2. `~/projects/my-repo/sub-project/AGENTS.md` (cwd, lowest precedence)
+2. `~/projects/my-repo/sub-project/AGENTS.md` (cwd)
 3. `~/projects/my-repo/AGENTS.md`
-4. `~/projects/AGENTS.md` (worktree root, highest precedence — inverted)
+4. `~/projects/AGENTS.md` (worktree root)
 
-Everything above the current git worktree root is silently skipped, and the within-worktree
-precedence is inverted relative to Claude Code.
+This comparison illustrates the original ordering problem, not how models resolve conflicts.
 
-## Goal
+## Implemented design
 
-A plugin that closes both gaps:
+The plugin addresses both gaps:
 
-1. **Inject missing files** — when OpenCode starts inside a git worktree, also load every
-    instruction file found in ancestor directories above the worktree root, all the way up to `/`.
-2. **Correct the order** — reorder all instruction blocks (injected + native) so that the full
-    set is outermost-first, matching Claude Code's precedence model (cwd = highest precedence,
-    `/` = lowest).
+1. **Inject missing files:** Check ancestor directories above the worktree root through `/`.
+2. **Order the chain:** Sort recognized directory-chain blocks outermost-first.
+    Preserve non-chain blocks ahead of that chain in their original relative order.
+    Prompt position alone does not establish instruction authority or model behavior.
 
-Final load order after the plugin (same example):
+Expected block order for the example (excluding other non-chain blocks):
 
-1. `~/.config/opencode/AGENTS.md` (global — untouched)
+1. `~/.config/opencode/AGENTS.md` (global non-chain block)
 2. `/Users/AGENTS.md` (plugin injects)
 3. `~/AGENTS.md` (plugin injects)
 4. `~/projects/AGENTS.md` (plugin injects)
 5. `~/projects/my-repo/AGENTS.md` (plugin injects)
-6. `~/projects/my-repo/sub-project/AGENTS.md` (cwd, highest precedence)
+6. `~/projects/my-repo/sub-project/AGENTS.md` (cwd)
 
 ## Technical constraints
 
-These are facts discovered during research — not design opinions.
+These were research inputs. Check current host behavior before treating them as API guarantees.
 
 ### Plugin hook
 
@@ -87,33 +85,31 @@ as a single string. There are no structured objects or per-file metadata at the 
 
 ### File block format
 
-Each loaded file is prefixed with a consistent header — stable across 34 commits since
-January 2026:
+The researched prompt contained a header for each loaded file:
 
 ```text
 Instructions from: /absolute/path/to/AGENTS.md
 <file content>
 ```
 
-This prefix is the only way to locate a specific file's contribution within `system[0]`.
+The parser uses this prefix to locate file blocks within `system[0]`.
 
 ### Reorder and inject strategy
 
-Since the plugin must parse `system[0]` into blocks anyway (to find the insertion point), it can
-reorder the full set at no meaningful extra cost:
+The implemented transform uses the following steps:
 
 1. Split `system[0]` into: base content (everything before the first `Instructions from:`) and an
     array of `{ path, content }` blocks.
 2. Collect above-worktree instruction files (walk from parent of git worktree root up to `/`).
-3. Merge native blocks + injected blocks into one array, sorted outermost-first by path depth.
-4. Rebuild `system[0]`: base content + sorted blocks.
+3. Keep non-chain blocks in relative order; sort only directory-chain blocks by path depth.
+4. Rebuild `system[0]` with the base, non-chain blocks, and sorted chain.
+    When file content permits, detach trailing custom text and append it after the blocks.
 
-The global config block (`~/.config/opencode/AGENTS.md`) is not reordered — it stays at the
-beginning of the instructions as OpenCode placed it.
+A global config block outside the current directory's chain stays with the non-chain blocks.
 
-Fallback: if parsing yields no blocks (no instruction files loaded at all, or the format changed),
-append injected files to `system[0]` and do not attempt reordering. Degrading gracefully is more
-important than erroring.
+If parsing finds no blocks, the transform appends readable ancestor files only when `sessionID` exists.
+It does not reorder the base text in that case.
+The entry hook catches exceptions, but prior mutations may remain if an error occurs.
 
 ### Filename lookup (per directory)
 
@@ -131,17 +127,15 @@ themselves git worktrees are not treated specially — the walk is uniform.
 
 ### No git worktree
 
-If the cwd is not inside a git worktree, OpenCode already walks to `/` natively, so there is
-nothing to inject — but its order is innermost-first there too, so the reordering must still run.
-(An earlier revision of this PRD wrongly specified a full no-op; that produced an inverted-order
-bug found in manual testing.)
+The implementation treats `/` as the non-git worktree sentinel and injects no files.
+It still sorts parsed chain blocks, preserving the fix for a previously observed inverted order.
+An earlier no-op proposal missed that case during manual testing.
 
-## Testing
+## Verification design
 
 ### Unit tests
 
-The core logic should be extracted into pure functions so it can be tested without OpenCode,
-git, or a real filesystem:
+The core logic uses injected filesystem callbacks and can be tested without OpenCode:
 
 - **Parser** — given a `system[0]` string, returns `{ base, blocks }` where `blocks` is an array
   of `{ path, content }`. Test with strings that have zero, one, and many blocks.
@@ -149,14 +143,13 @@ git, or a real filesystem:
   innermost = last). Test ordering, ties, and empty input.
 - **Reconstructor** — given `base` and sorted `blocks`, returns the rebuilt string. Test that the
   output round-trips through the parser.
-- **Walker** — given a start directory and a root boundary, returns the instruction files found.
-  Test against a real temp directory tree (create, assert, delete) or a mock filesystem.
+- **Walker** — given a start directory and boundary, returns instruction files found.
+  Test with an in-memory filesystem; integration tests use temporary directories.
 
 ### Hook integration test
 
-Test the hook end-to-end by calling it with a fabricated `output.system` and a mocked git
-subprocess, then asserting the resulting `output.system[0]` matches the expected order. No OpenCode
-process required.
+Tests call the hook with fabricated `output.system` and a real temporary filesystem.
+The plugin receives a worktree path; these tests do not start OpenCode or mock git.
 
 ### Manual end-to-end verification
 
@@ -164,7 +157,9 @@ Start an OpenCode session in a directory with a known file tree and ask:
 _"What AGENTS.md files were injected in your system prompt and in what order?"_
 
 Set up files at several levels (including above and below git worktree boundaries) and confirm the
-order matches the goal. This is how the behavior was verified throughout the research for this PRD.
+order matches the goal.
+The original README reported verification against OpenCode 1.17.
+That historical report does not reproduce or verify behavior on current OpenCode versions.
 
 ### Local development
 
@@ -178,15 +173,15 @@ Reference the plugin as a local path in `opencode.json` to avoid push/reinstall 
 
 - Configurable filename list or boundary via plugin options (keep it simple unless there is a clear
   reason to add options)
-- In-repo subdirectory walking (OpenCode already handles that natively)
+- In-repo subdirectory walking (original scope assumption: OpenCode handled that natively)
 
-## Delivery
+## Original delivery design
 
 - Public GitHub repo
 - A `package.json` at the repo root with `"type": "module"` and a `"main"` pointing to the plugin
   entry file — this is what makes the git-backed install spec work
 - No npm publish required; OpenCode/Bun resolves it directly from git
-- Installed in `~/.config/opencode/opencode.json` like any other plugin:
+- Git-backed installation uses `~/.config/opencode/opencode.json`:
 
 ```json
 { "plugin": ["opencode-agents-cascade@git+https://github.com/<user>/opencode-agents-cascade.git"] }

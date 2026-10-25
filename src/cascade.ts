@@ -6,16 +6,15 @@ import path from "node:path"
  * wires in the real `node:fs` calls.
  */
 
-/** Header OpenCode prefixes to every instruction file merged into system[0]. */
+/** Header expected for instruction blocks in the observed OpenCode prompt format. */
 export const INSTRUCTION_HEADER = "Instructions from: "
 
 /** Filenames probed per ancestor directory, in priority order. */
 export const WALK_FILENAMES = ["AGENTS.md", "CLAUDE.md"] as const
 
 /**
- * Basenames eligible for outermost-first reordering. CONTEXT.md is not
- * injected by the walker but OpenCode still loads it natively (deprecated),
- * so native CONTEXT.md blocks must sort with the rest of the chain.
+ * Basenames eligible for outermost-first reordering. The walker does not
+ * inject CONTEXT.md; a native block with that basename can join the chain.
  */
 export const SORTABLE_FILENAMES = ["AGENTS.md", "CLAUDE.md", "CONTEXT.md"] as const
 
@@ -29,8 +28,8 @@ export interface ParsedSystem {
   blocks: Block[]
 }
 
-/** A header line must point at an absolute path or URL — anything else is
- * treated as ordinary file content to limit false positives. */
+/** A header line must point at an absolute path or URL.
+ * Other lines remain ordinary content to limit false positives. */
 function isHeaderLine(line: string): boolean {
   if (!line.startsWith(INSTRUCTION_HEADER)) return false
   const target = line.slice(INSTRUCTION_HEADER.length)
@@ -38,12 +37,11 @@ function isHeaderLine(line: string): boolean {
 }
 
 /**
- * Split system[0] into the base prompt (everything before the first
- * instruction header) and one block per loaded instruction file.
+ * Parse expected instruction headers in system[0] into a base prompt and blocks.
+ * The base precedes the first header; each following header starts another block.
  *
- * Known limitation: blocks are delimited only by header lines, so any text
- * OpenCode appends after the last block (e.g. a user-level system prompt)
- * is carried inside the last block's content.
+ * Known limitation: only header lines delimit blocks.
+ * In the observed host format, text appended after the final block stays in that block's content.
  */
 export function parseSystem(text: string): ParsedSystem {
   const lines = text.split("\n")
@@ -75,9 +73,8 @@ function pathDepth(p: string): number {
 
 /**
  * Sort blocks outermost-first: fewest path segments first, so the cwd file
- * (deepest) lands last and gets the highest LLM weight. Ties break
- * lexicographically for determinism; an ancestor chain never produces ties
- * because each directory contributes at most one file.
+ * (deepest) lands last. This establishes position, not model priority.
+ * Ties break lexicographically; a collected ancestor chain has one file per directory.
  */
 export function sortBlocks(blocks: Block[]): Block[] {
   return [...blocks].sort(
@@ -135,7 +132,7 @@ export function collectAncestorFiles(
 
 /** True when the block is part of the cwd's ancestor chain and should be
  * reordered. Global files (~/.config/opencode, ~/.claude) and URL blocks
- * never qualify because their directory is not an ancestor of the cwd. */
+ * lie outside the cwd's ancestor chain, so they never qualify. */
 export function isChainBlock(block: Block, directory: string): boolean {
   if (!block.path.startsWith("/")) return false
   if (!(SORTABLE_FILENAMES as readonly string[]).includes(path.basename(block.path))) return false
@@ -145,15 +142,12 @@ export function isChainBlock(block: Block, directory: string): boolean {
 }
 
 /**
- * OpenCode appends per-prompt custom system text (PromptInput.system) after
- * the last instruction block, and the joined string gives the parser no
- * delimiter to spot the boundary. Re-reading the last block's file recovers
- * it: whatever follows the file's verbatim content must be appended text.
- * Splitting it off lets the transform keep it at the very end — its
- * original, highest-precedence position — instead of dragging it wherever
- * the last block sorts to. Falls back to no split (text travels with the
- * block, the pre-existing behavior) when the file is unreadable, changed
- * since OpenCode read it, or the last block is a remote URL.
+ * In the observed host format, per-prompt custom system text (PromptInput.system)
+ * can follow the last instruction block. The joined string has no delimiter there.
+ * Re-reading that block's file can separate text following its verbatim content.
+ * The transform places separated text after the reordered blocks.
+ * Without a matching local file, text remains attached to the last block.
+ * This includes unreadable or changed files and remote URL blocks.
  */
 export function extractTrailingText(
   blocks: Block[],
@@ -187,17 +181,14 @@ export interface TransformInput {
 }
 
 /**
- * Inject ancestor instruction files and reorder the full set
- * outermost-first. Mutates input.system[0]; never throws by design of its
- * callers (the entry point wraps it defensively anyway).
+ * Inject ancestor files and sort recognized directory-chain blocks outermost-first.
+ * Mutates input.system[0]; the entry hook catches errors without rolling back mutations.
  */
 export function transformSystem(input: TransformInput): void {
   const { system, directory, worktree, sessionID, exists, read } = input
 
-  // Non-git projects report the worktree sentinel "/": OpenCode already
-  // walks to "/" natively so there is nothing to inject (the collector
-  // returns no candidates for a root worktree), but the native order is
-  // still innermost-first and needs the same reordering as everyone else.
+  // The non-git worktree sentinel "/" yields no injection candidates.
+  // Parsed native chain blocks can still be reordered.
   if (!worktree) return
   if (system.length === 0 || typeof system[0] !== "string") return
 
@@ -214,10 +205,8 @@ export function transformSystem(input: TransformInput): void {
   }
 
   if (nativeBlocks.length === 0) {
-    // Nothing parseable: either no instruction files were loaded, or the
-    // header format changed. Degrade gracefully — append, never reorder.
-    // Without a sessionID this is an internal prompt (e.g. agent
-    // generation), which must not receive project instructions.
+    // With no parseable blocks, append candidates only for a session request.
+    // No sessionID may indicate an internal prompt; leave it unchanged.
     if (injected.length === 0 || sessionID === undefined) return
     system[0] = buildSystem(system[0], injected)
     return

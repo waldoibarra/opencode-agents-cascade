@@ -77,8 +77,7 @@ describe("AgentsCascadePlugin (hook against a real filesystem)", () => {
     }
     await hooks["experimental.chat.system.transform"]({ sessionID: "ses_1", model: {} }, output)
     const paths = parseSystem(output.system[0] ?? "").blocks.map((b) => b.path)
-    // Inverted order fixed; the real files above (root AGENTS.md, mid
-    // CLAUDE.md) stay out because OpenCode walks the hierarchy itself.
+    // The root sentinel prevents injection of files above the temp worktree.
     expect(paths).toEqual([path.join(worktree, "AGENTS.md"), path.join(directory, "AGENTS.md")])
   })
 

@@ -1,44 +1,44 @@
 # How it works
 
-OpenCode merges every loaded instruction file into a single system-prompt string, each prefixed
-with `Instructions from: <absolute path>`. The plugin registers the
-`experimental.chat.system.transform` hook and, on every chat request:
+The plugin transforms the first string in OpenCode's `output.system` array.
+It relies on the experimental `experimental.chat.system.transform` hook and `Instructions from:` headers.
+Those are integration assumptions, not a guarantee across future host versions.
 
-1. Parses the merged string into a base prompt plus one block per file.
-2. Detects per-prompt custom system text appended after the last block (by re-reading that
-    block's file and splitting off whatever follows its verbatim content).
-3. Collects instruction files from directories above the git worktree root (one per directory,
-    `AGENTS.md` preferred over `CLAUDE.md`).
-4. Rebuilds the prompt: base, then non-chain blocks (global config, remote URLs, custom
-    `instructions` entries) in their original order, then the full ancestor chain sorted
-    outermost-first, then the custom system text back at the very end.
+For each hook call, the implementation:
 
-## Precedence model
+1. Parses `system[0]` into base text and instruction blocks using absolute-path or URL headers.
+2. Attempts to separate text appended after the last local block by rereading its file.
+3. Looks above the worktree root for readable, nonempty files absent from native blocks.
+4. Keeps non-chain blocks in relative order, then sorts the directory chain outermost-first.
+5. Rebuilds `system[0]`, appending separated trailing text when available.
 
-The result matches Claude Code: the file closest to the cwd appears last and gets the highest
-LLM weight; `/` is the outermost and weakest. The global config block
-(`~/.config/opencode/AGENTS.md`) is left untouched at the start of the instructions.
+The walk checks `AGENTS.md` before `CLAUDE.md` in each ancestor directory.
+Native `CONTEXT.md` blocks can join the sorted chain; the walker does not inject them.
+The transform changes only `system[0]` and leaves other array entries alone.
+For shared terms, see the [glossary](../GLOSSARY.md).
 
-If the cwd is not inside a git worktree, OpenCode already walks to `/` natively, so the plugin
-injects nothing — but the native order is innermost-first there too, so the reordering still
-applies. If parsing finds no blocks (no instruction files loaded, or the upstream format
-changed), the plugin appends the ancestor files without reordering. Any unexpected failure
-degrades to a no-op; it never breaks the chat request.
+## Ordering and boundaries
 
-## Runtime
+A chain block must name `AGENTS.md`, `CLAUDE.md`, or `CONTEXT.md` at an ancestor directory.
+Non-chain blocks stay ahead of the chain.
+These include remote URLs and global configuration outside that path.
+The code sorts chain blocks by path depth, then lexically at equal depth.
+This determines prompt position, not which instructions a model obeys.
+It does not reproduce every Claude Code loading rule.
 
-The plugin ships as TypeScript sources with no build step: OpenCode executes plugins with Bun,
-which transpiles TypeScript at import time. Bun strips types without checking them, so type
-safety is enforced separately by `just typecheck`.
+With `/` as the non-git worktree sentinel, the plugin injects nothing.
+It still sorts parsed native chain blocks.
+If parsing finds no native blocks, it appends collected files only for a request with `sessionID`.
+If nothing needs changing, the transform leaves the string as it was.
 
-Git installs are cached under `~/.cache/opencode/packages/` and never auto-update — pin a new
-tag or commit to upgrade. Path specs (absolute or `~/`-relative) resolve to the working tree
-itself, so they always load the current code.
+## Failure and format limits
 
-## Known limitations
+- An `Instructions from:` line inside file content can be mistaken for another block.
+- Trailing text remains attached to its block when the file changed, cannot be read, or names a URL.
+- Other file content can resemble trailing text; the split relies on the last block's disk content.
+- Empty or unreadable ancestor files are skipped; read errors do not reveal their contents.
+- The entry hook catches thrown errors but does not undo mutations already made before an exception.
+- Upstream prompt formats or hook behavior may change; tests use fabricated prompts, not a live host.
 
-- Blocks are recognized by their `Instructions from:` header line, so file content that itself
-  contains such a line (pointing at an absolute path) splits a block in two.
-- Per-prompt custom system text travels with the last block instead of staying at the end when
-  the boundary cannot be recovered: the file changed on disk mid-request, or the last block is a
-  remote URL.
+For installation and upgrade guidance, read [install and use](install.md).
+For local development and verification, read [development](development.md).

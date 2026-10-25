@@ -3,8 +3,8 @@ import { transformSystem } from "./cascade"
 
 /**
  * Minimal structural types for the OpenCode plugin contract, so the plugin
- * ships with zero dependencies. Verified against @opencode-ai/plugin:
- * the host passes more fields than declared here; extras are ignored.
+ * declares no runtime dependencies. The host contract is experimental;
+ * extra input fields are ignored by this implementation.
  */
 interface PluginInput {
   directory: string
@@ -48,8 +48,8 @@ export const AgentsCascadePlugin = async ({ directory, worktree }: PluginInput):
           read: readOrUndefined,
         })
       } catch {
-        // A broken system prompt is worse than a missing cascade — never
-        // let an injection failure take down the chat request.
+        // Ignore transform errors so this hook does not reject the request.
+        // Any mutation made before an error remains in output.system.
       }
     },
   }

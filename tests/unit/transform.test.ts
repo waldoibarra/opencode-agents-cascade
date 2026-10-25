@@ -29,7 +29,7 @@ describe("transformSystem — PRD example end-to-end", () => {
     "/Users/me/AGENTS.md": "home level",
   })
 
-  // Native OpenCode order: global first, then cwd → worktree root (inverted).
+  // Simulated native order: global, then cwd to worktree root.
   const nativeSystem = [
     BASE,
     block("/Users/me/.config/opencode/AGENTS.md", "global"),
@@ -75,8 +75,8 @@ describe("transformSystem — PRD example end-to-end", () => {
   })
 
   it("produces the same final order regardless of which nested repo is the worktree", () => {
-    // Same tree, but git resolved the innermost repo as the worktree:
-    // natively only the cwd file is loaded, everything else is injected.
+    // Simulate an inner worktree with only the cwd file in the prompt.
+    // The transform injects the remaining files from the fake filesystem.
     const innerSystem = [
       BASE,
       block("/Users/me/.config/opencode/AGENTS.md", "global"),
@@ -138,8 +138,7 @@ describe("transformSystem — no-op guards", () => {
 
 describe("transformSystem — non-git projects (worktree sentinel '/')", () => {
   it("reorders the native innermost-first chain without injecting", () => {
-    // OpenCode walks to "/" natively when there is no git repo, but in
-    // innermost-first order — the inversion still needs fixing.
+    // Simulate a non-git prompt with an innermost-first native chain.
     const system = [
       [
         BASE,
@@ -155,8 +154,7 @@ describe("transformSystem — non-git projects (worktree sentinel '/')", () => {
       directory: "/Users/me/projects/test-load-order",
       worktree: "/",
       sessionID: "s",
-      // Exists on disk but must not be collected: nothing is missing when
-      // OpenCode already walked the whole hierarchy itself.
+      // The root sentinel prevents injection despite this available file.
       ...fakeFs({ "/AGENTS.md": "root" }),
     })
     expect(headerPaths(system[0])).toEqual([
@@ -269,8 +267,7 @@ describe("transformSystem — custom system text stays last", () => {
   const userSystem = "Always answer in haiku.\nNo exceptions."
 
   it("keeps per-prompt system text at the end across reordering", () => {
-    // Native order: global, cwd file, worktree-root file, then the
-    // custom system text glued onto the last block by the \n join.
+    // Simulate a global block, two chain blocks, and appended custom text.
     const system = [
       [
         BASE,

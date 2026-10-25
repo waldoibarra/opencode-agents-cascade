@@ -4,10 +4,10 @@ Navigation index for LLMs. Read this first; fetch linked docs on demand.
 
 ## Project
 
-`opencode-agents-cascade` — OpenCode plugin that injects `AGENTS.md`/`CLAUDE.md` files from
-directories above the git worktree root and reorders all instruction blocks outermost-first,
-matching Claude Code precedence. Design and research → `PRD.md`. Core logic (pure functions) →
-`src/cascade.ts`; plugin entry → `src/index.ts`; tests → `tests/`.
+`opencode-agents-cascade` injects missing ancestor instruction files above the git worktree root.
+It sorts directory-chain blocks outermost-first; this does not guarantee model instruction priority.
+Read `PRD.md` for original research, `src/cascade.ts` for core logic, and `src/index.ts` for wiring.
+Tests live under `tests/`. Read `GLOSSARY.md` before changing domain terminology.
 
 ## Key commands
 
@@ -24,6 +24,7 @@ current list of available commands.
 
 ## Deep reference
 
+- Installation, use, and upgrades → `docs/install.md`
 - Plugin mechanism and limitations → `docs/how-it-works.md`
 - Development guide (commands, architecture, tests) → `docs/development.md`
 - Release procedure (version bump, tag, push) → `docs/development.md`

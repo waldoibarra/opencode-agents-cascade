@@ -1,6 +1,7 @@
 # Toolchain
 
-All tools are managed by mise and pinned to `latest` in `mise.toml`.
+`mise.toml` selects `latest` for its declared tools; versions can change between installations.
+TypeScript is a package dev dependency, not a mise-managed tool.
 
 ## Tools
 

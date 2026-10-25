@@ -4,13 +4,11 @@
 [![Lint](https://github.com/waldoibarra/opencode-agents-cascade/actions/workflows/lint.yml/badge.svg)](https://github.com/waldoibarra/opencode-agents-cascade/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-OpenCode plugin that makes `AGENTS.md`/`CLAUDE.md` loading behave like Claude Code: every
-ancestor directory is loaded, and the file closest to you wins.
+Keep directory-specific instructions available when you work inside a git repository.
+OpenCode may omit instruction files above its worktree root.
+This plugin adds those files and places ancestor instruction blocks from outermost to innermost.
 
-## The problem
-
-Say you keep layered instructions — personal rules in your home directory, conventions per
-projects folder, specifics in each repo:
+For example, consider a session inside `my-repo/sub`:
 
 ```text
 /Users/
@@ -19,73 +17,29 @@ projects folder, specifics in each repo:
     ├── AGENTS.md
     └── projects/
         ├── AGENTS.md
-        └── my-repo/            ← git repo
+        └── my-repo/            ← git worktree
             ├── AGENTS.md
-            └── sub/            ← you run opencode here
+            └── sub/            ← current directory
                 └── AGENTS.md
 ```
 
-OpenCode loads only this, after your global config file:
+The plugin looks for missing files above `my-repo`, then orders the ancestor chain:
+`/Users`, `/Users/you`, `/Users/you/projects`, `my-repo`, `my-repo/sub`.
+It checks `AGENTS.md` first and falls back to `CLAUDE.md` in each directory.
+Other prompt blocks may remain ahead of this chain.
+The resulting order does not enforce instruction priority or guarantee model compliance.
 
-1. `my-repo/sub/AGENTS.md`
-2. `my-repo/AGENTS.md` — highest weight: the repo root beats the directory you are in
+The plugin depends on OpenCode's experimental system transform hook and instruction-header format.
+A header inside file content can confuse parsing; some appended system text cannot be separated.
+See [how it works and its limitations](docs/how-it-works.md) before relying on a specific order.
 
-Everything above the git repo is silently skipped, and within the repo the precedence is
-inverted — the outermost file wins. Claude Code does the opposite on both counts.
+## Next steps
 
-## What the plugin does
-
-With the plugin, the same session loads:
-
-1. `/Users/AGENTS.md`
-2. `/Users/you/AGENTS.md`
-3. `/Users/you/projects/AGENTS.md`
-4. `my-repo/AGENTS.md`
-5. `my-repo/sub/AGENTS.md` — highest weight: the closest file wins, like Claude Code
-
-- **Injects missing ancestors** — walks from the worktree root's parent up to `/`, one file per
-  directory, `AGENTS.md` preferred over `CLAUDE.md`.
-- **Fixes precedence** — reorders all instruction blocks outermost-first, with or without a git
-  repo in the hierarchy.
-- **Stays out of the way** — the global config block is untouched, per-prompt custom system text
-  keeps its position, and any failure degrades gracefully instead of breaking the chat request.
-
-## Install
-
-Add the plugin to `~/.config/opencode/opencode.json`:
-
-```json
-{
-  "plugin": ["opencode-agents-cascade@git+https://github.com/waldoibarra/opencode-agents-cascade.git"]
-}
-```
-
-Pin to a tag or commit with `#v1.0.0` / `#<sha>` at the end of the spec. Verified against
-OpenCode 1.17.
-
-### Upgrading
-
-OpenCode installs git-spec plugins once and never re-fetches them. To pick up a new version,
-pin a different ref, or clear the cached install and start a new session:
-
-```sh
-rm -rf ~/.cache/opencode/packages/opencode-agents-cascade*
-```
-
-The cache lives under `$XDG_CACHE_HOME/opencode/packages/` when that variable is set.
-
-## Use
-
-Nothing to configure: start OpenCode inside any project and your ancestor instructions are
-injected on every chat request. To see it working, ask the model:
-
-> What "Instructions from:" headers are in your system prompt, in order?
-
-## Docs
-
-- [How it works and known limitations](docs/how-it-works.md)
-- [Development guide](docs/development.md)
-- [PRD: problem, research, and design](PRD.md)
+- [Install, use, or upgrade the plugin](docs/install.md).
+- [Understand the plugin's behavior and limits](docs/how-it-works.md).
+- [Develop or release the plugin](docs/development.md).
+- [Look up project terminology](GLOSSARY.md).
+- [Read the original problem and design research](PRD.md).
 
 ## License
 
